@@ -1,0 +1,3 @@
+C:/Users/Rictor/Documents/GitHub/Playroot/cmake-build-debug/CMakeFiles/Playroot.dir
+C:/Users/Rictor/Documents/GitHub/Playroot/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/Rictor/Documents/GitHub/Playroot/cmake-build-debug/CMakeFiles/rebuild_cache.dir
