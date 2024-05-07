@@ -172,6 +172,46 @@ void traversal(BTreeNode *myNode) {
     }
 }
 
+//função para modificar algum nodo
+
+Game* search(BTreeNode *root, int id) {
+    if (root == nullptr) return nullptr;
+
+    int i = 0;
+    while (i < root->count && id > root->item[i + 1].id) {
+        i++;
+    }
+
+    if (i < root->count && id == root->item[i + 1].id) {
+        return &root->item[i + 1];
+    }
+
+    if (root->linker[i] != nullptr) {
+        return search(root->linker[i], id);
+    }
+
+    return nullptr;
+}
+
+void updateGame(BTreeNode *root, int id, const std::string& newName = "", const std::string& newGenre = "", const std::string& newSinopse = "") {
+    Game* game = search(root, id);  // Reutiliza a função de busca
+    if (game != nullptr) {
+        // Atualiza os dados do jogo
+        if (!newName.empty()) game->name = newName;
+        if (!newGenre.empty()) game->genre = newGenre;
+        if (!newSinopse.empty()) game->sinopse = newSinopse;
+
+        // Mostra os dados atualizados do jogo
+        std::cout << "Game updated: ID = " << game->id
+                  << ", Name = " << game->name
+                  << ", Genre = " << game->genre
+                  << ", Sinopse = " << game->sinopse << std::endl;
+    } else {
+        std::cout << "Game with ID " << id << " not found." << std::endl;
+    }
+}
+
+
 //Busca de um nodo
 
 void searchAndDisplay(BTreeNode *root, int id) {
@@ -215,23 +255,23 @@ void printGamesByGenre(BTreeNode *node, const std::string &genre) {
     printGamesByGenre(node->linker[node->count], genre);  // Visita o último filho
 }
 
+
 int main() {
-    Game game1 = {1, "Game One", "Adventure", "Explore an ancient world"};
-    insertion(game1);
-    Game game2 = {2, "Game Two", "Action", "Action-packed sequences"};
-    insertion(game2);
-    Game game3 = {3, "Game Three", "Puzzle", "Solve intricate puzzles"};
-    insertion(game3);
-    Game game4 = {4, "Game Four", "Adventure", "A quest through the mountains"};
-    insertion(game4);
-
-    printGamesByGenre(root, "Adventure");
-
+//    Game game1 = {1, "Game One", "Adventure", "Explore an ancient world"};
+//    insertion(game1);
+//    Game game2 = {2, "Game Two", "Action", "Action-packed sequences"};
+//    insertion(game2);
+//    Game game3 = {3, "Game Three", "Puzzle", "Solve intricate puzzles"};
+//    insertion(game3);
+//    Game game4 = {4, "Game Four", "Adventure", "A quest through the mountains"};
+//    insertion(game4);
+//
+//    printGamesByGenre(root, "Adventure");
+//    printf("\n\n");
+//    updateGame(root, 1, "Superman");
+//    traversal(root);
     int counter;
 std::cout<<"\t\t\tWelcome to PlayRoot"<<"\n";
-std::cout<<"";
 
 return 0;
 }
-
-//test to add in Git
