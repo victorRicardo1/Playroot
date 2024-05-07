@@ -196,26 +196,42 @@ void searchAndDisplay(BTreeNode *root, int id) {
     }
 }
 
-void buscarGenero(){
+//Impressão dos jogos de um respectivo gênero.
 
+void printGamesByGenre(BTreeNode *node, const std::string &genre) {
+    if (node == nullptr) return;  // Condição de parada da recursão
+
+    for (int i = 0; i < node->count; i++) {
+        printGamesByGenre(node->linker[i], genre);  // Visita o filho à esquerda do item
+
+        // Verifica se o gênero do jogo atual corresponde ao buscado
+        if (node->item[i + 1].genre == genre) {
+            std::cout << "Game found: ID = " << node->item[i + 1].id
+                      << ", Name = " << node->item[i + 1].name
+                      << ", Genre = " << node->item[i + 1].genre
+                      << ", Sinopse = " << node->item[i + 1].sinopse << std::endl;
+        }
+    }
+    printGamesByGenre(node->linker[node->count], genre);  // Visita o último filho
 }
 
 int main() {
-//    Game game1 = {1, "Game One", "Adventure", "Explore an ancient world"};
-//    insertion(game1);
-//    Game game2 = {2, "Game Two", "Action", "Action-packed sequences"};
-//    insertion(game2);
-//    Game game3 = {3, "Game Three", "Puzzle", "Solve intricate puzzles"};
-//    insertion(game3);
-//    traversal(root);
-//    printf("\n");
-//    deleteNode(root, 2);
-//    traversal(root);
-//    printf("\n");
-//    searchAndDisplay(root, 1);
-std::cout<<"Welcome to PlayRoot"<<"n";
+    Game game1 = {1, "Game One", "Adventure", "Explore an ancient world"};
+    insertion(game1);
+    Game game2 = {2, "Game Two", "Action", "Action-packed sequences"};
+    insertion(game2);
+    Game game3 = {3, "Game Three", "Puzzle", "Solve intricate puzzles"};
+    insertion(game3);
+    Game game4 = {4, "Game Four", "Adventure", "A quest through the mountains"};
+    insertion(game4);
 
-    return 0;
+    printGamesByGenre(root, "Adventure");
+
+    int counter;
+std::cout<<"\t\t\tWelcome to PlayRoot"<<"\n";
+std::cout<<"";
+
+return 0;
 }
 
 //test to add in Git
