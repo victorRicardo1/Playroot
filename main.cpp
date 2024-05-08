@@ -159,7 +159,7 @@ void deleteNode(BTreeNode *&root, int id) {
     }
 }
 
-// Função para mostrar todos os jogos registrados
+// Função para mostrar todos os jogos registrados ordenados
 void traversal(BTreeNode *myNode) {
     if (myNode) {
         for (int i = 0; i < myNode->count; i++) {
@@ -255,23 +255,18 @@ void printGamesByGenre(BTreeNode *node, const std::string &genre) {
     printGamesByGenre(node->linker[node->count], genre);  // Visita o último filho
 }
 
-
 int main() {
-//    Game game1 = {1, "Game One", "Adventure", "Explore an ancient world"};
-//    insertion(game1);
-//    Game game2 = {2, "Game Two", "Action", "Action-packed sequences"};
-//    insertion(game2);
-//    Game game3 = {3, "Game Three", "Puzzle", "Solve intricate puzzles"};
-//    insertion(game3);
-//    Game game4 = {4, "Game Four", "Adventure", "A quest through the mountains"};
-//    insertion(game4);
-//
-//    printGamesByGenre(root, "Adventure");
-//    printf("\n\n");
-//    updateGame(root, 1, "Superman");
-//    traversal(root);
+    printGamesByGenre(root, "Adventure");
+    printf("\n\n");
+    updateGame(root, 1, "Superman");
+    traversal(root);
+    printf("\n");
+
     int counter;
 std::cout<<"\t\t\tWelcome to PlayRoot"<<"\n";
+
+
+
 
 return 0;
 }
