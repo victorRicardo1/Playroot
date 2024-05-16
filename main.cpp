@@ -7,8 +7,8 @@
 #include <limits>
 #include <algorithm>
 
-#define MAX 4
-#define MIN 2
+#define MAX 100
+#define MIN 50
 
 struct Game {
     int id;
@@ -27,22 +27,61 @@ BTreeNode *root = nullptr;
 
 // Funções para manipulação de arquivos
 void writeGameData(const Game& game) {
+    std::ifstream checkFile("games_data.txt");
+    std::string line;
+
+    // Verifica se o registro já existe no arquivo
+    while (getline(checkFile, line)) {
+        std::stringstream ss(line);
+        std::string idStr;
+        std::getline(ss, idStr, ',');
+        int id = std::stoi(idStr);
+        if (id == game.id) {
+            checkFile.close();  // Fecha o arquivo
+            return;  // Sai da função se o registro já existir
+        }
+    }
+
+    // Se o registro não existe, grava no arquivo
+    checkFile.close();  // Fecha o arquivo
+
     std::ofstream dataFile("games_data.txt", std::ios::app);
     dataFile << game.id << ',' << game.name << ',' << game.genre << ',' << game.sinopse << '\n';
     dataFile.close();
 }
 
-void writeTreeNode(BTreeNode* node) {
-    std::ofstream indexFile("btree_index.txt", std::ios::app);
-    indexFile << node->count;
-    for (int i = 0; i < node->count; i++) {
-        indexFile << ',' << node->item[i + 1].id;
+void writeTreeNode(BTreeNode* node, std::ofstream& indexFile) {
+    if (!node) return;
+
+    // Escreve os índices do nó no arquivo
+    for (int i = 1; i <= node->count; i++) {
+        indexFile << node->item[i].id;
+        if (i < node->count) {
+            indexFile << ',';
+        }
     }
     indexFile << '\n';
-    indexFile.close();
+
+    // Chama recursivamente para os filhos
+    for (int i = 0; i <= node->count; i++) {
+        writeTreeNode(node->linker[i], indexFile);
+    }
+}
+
+
+void writeTreeToFile(BTreeNode* root) {
+    std::ofstream indexFile("btree_index.txt");
+    if (indexFile.is_open()) {
+        writeTreeNode(root, indexFile);
+        indexFile.close();
+    } else {
+        std::cerr << "Unable to open index file for writing." << std::endl;
+    }
 }
 
 //Funções básicas para o funcionamento da árvore
+
+//Inserção
 
 BTreeNode *createNode(Game game, BTreeNode *child) {
     BTreeNode *newNode = new BTreeNode;
@@ -52,7 +91,7 @@ BTreeNode *createNode(Game game, BTreeNode *child) {
     for (int i = 1; i <= MAX; i++) {
         newNode->linker[i] = nullptr;
     }
-    writeTreeNode(newNode);
+    writeTreeToFile(newNode);
     return newNode;
 }
 
@@ -66,7 +105,7 @@ void addValToNode(Game game, int pos, BTreeNode *node, BTreeNode *child) {
     node->item[j + 1] = game;
     node->linker[j + 1] = child;
     node->count++;
-    writeTreeNode(node);
+    writeTreeToFile(node);
 }
 
 void splitNode(Game game, Game *pval, int pos, BTreeNode *node, BTreeNode *child, BTreeNode **newNode) {
@@ -95,7 +134,7 @@ void splitNode(Game game, Game *pval, int pos, BTreeNode *node, BTreeNode *child
     *pval = node->item[node->count];
     (*newNode)->linker[0] = node->linker[node->count];
     node->count--;
-    writeTreeNode(*newNode);
+    writeTreeToFile(*newNode);
 }
 
 int setValueInNode(Game game, Game *pval, BTreeNode *node, BTreeNode **child) {
@@ -109,15 +148,17 @@ int setValueInNode(Game game, Game *pval, BTreeNode *node, BTreeNode **child) {
     if (game.id < node->item[1].id) {
         pos = 0;
     } else {
-        for (pos = node->count; game.id < node->item[pos].id && pos > 1; pos--);
+        for (pos = node->count; pos > 0 && game.id < node->item[pos].id; pos--);
         if (game.id == node->item[pos].id) {
             std::cout << "Duplicates not allowed\n";
             return 0;
         }
     }
+
     if (setValueInNode(game, pval, node->linker[pos], child)) {
         if (node->count < MAX) {
             addValToNode(*pval, pos, node, *child);
+            return 0;
         } else {
             splitNode(*pval, pval, pos, node, *child, child);
             return 1;
@@ -132,9 +173,14 @@ void insertion(Game game) {
 
     if (setValueInNode(game, &pval, root, &child)) {
         root = createNode(pval, child);
+        std::ofstream indexFile("btree_index.txt", std::ios::app);
+        writeTreeNode(root, indexFile);
+        indexFile.close();
     }
     writeGameData(game);
 }
+
+//Exclusão
 
 bool deleteFromNode(BTreeNode *node, int id) {
     int pos;
@@ -209,13 +255,47 @@ Game* search(BTreeNode *root, int id) {
     return nullptr;
 }
 
+//Area da modificação do nodo
+
+void updateGameData(const Game& game) {
+    std::ifstream fileIn("games_data.txt");
+    std::ofstream fileOut("temp.txt");
+
+    std::string line;
+    while (std::getline(fileIn, line)) {
+        std::stringstream ss(line);
+        std::string idStr;
+        std::getline(ss, idStr, ',');
+        int id = std::stoi(idStr);
+        if (id == game.id) {
+            fileOut << game.id << ',' << game.name << ',' << game.genre << ',' << game.sinopse << '\n';
+        } else {
+            fileOut << line << '\n';
+        }
+    }
+
+    fileIn.close();
+    fileOut.close();
+
+    std::remove("games_data.txt");
+    std::rename("temp.txt", "games_data.txt");
+}
 void updateGame(BTreeNode *root, int id, const std::string& newName = "", const std::string& newGenre = "", const std::string& newSinopse = "") {
     Game* game = search(root, id);  // Reutiliza a função de busca
     if (game != nullptr) {
         // Atualiza os dados do jogo
-        if (!newName.empty()) game->name = newName;
-        if (!newGenre.empty()) game->genre = newGenre;
-        if (!newSinopse.empty()) game->sinopse = newSinopse;
+        if (!newName.empty()) {
+            game->name = newName;
+            updateGameData(*game);
+        }
+        if (!newGenre.empty()) {
+            game->genre = newGenre;
+            updateGameData(*game);
+        }
+        if (!newSinopse.empty()) {
+            game->sinopse = newSinopse;
+            updateGameData(*game);
+        }
 
         // Mostra os dados atualizados do jogo
         std::cout << "Game updated: ID = " << game->id
@@ -226,6 +306,8 @@ void updateGame(BTreeNode *root, int id, const std::string& newName = "", const 
         std::cout << "Game with ID " << id << " not found." << std::endl;
     }
 }
+
+//Busca
 
 void searchAndDisplay(BTreeNode *root, int id) {
     int i = 0;
@@ -287,11 +369,24 @@ void loadGames(std::unordered_map<int, Game>& games) {
     dataFile.close();
 }
 
+void deleteTree(BTreeNode* node) {
+    if (node == nullptr) {
+        return;
+    }
+
+    for (int i = 0; i <= node->count; ++i) {
+        deleteTree(node->linker[i]);
+    }
+
+    delete node;
+}
+
 void rebuildTree(const std::string& filename) {
     std::ifstream file(filename);
     std::string line;
-    std::vector<BTreeNode*> nodes;
+    std::vector<Game> games;
 
+    // Lê os registros do arquivo e armazena-os em um vetor de jogos
     while (getline(file, line)) {
         std::stringstream ss(line);
         Game game;
@@ -302,35 +397,33 @@ void rebuildTree(const std::string& filename) {
         getline(ss, genre, ',');
         getline(ss, sinopse);
 
+        // Verifica se todos os campos foram lidos corretamente
+        if (id.empty() || name.empty() || genre.empty() || sinopse.empty()) {
+            std::cerr << "Erro ao ler registro: " << line << std::endl;
+            continue; // Ignora o registro incompleto
+        }
+
         game.id = std::stoi(id);
         game.name = name;
         game.genre = genre;
         game.sinopse = sinopse;
 
-        BTreeNode* node = new BTreeNode();
-        node->item[1] = game;
-        node->count = 1;
-        nodes.push_back(node);
+        games.push_back(game);
     }
-
-    // Conectando nós de forma linear para simplificar
-    for (int i = 0; i < nodes.size() - 1; i++) {
-        nodes[i]->linker[0] = nodes[i + 1];
-    }
-    if (!nodes.empty()) {
-        nodes.back()->linker[0] = nullptr;
-    }
-
-    root = nodes.empty() ? nullptr : nodes[0];
     file.close();
+
+    // Constrói a árvore a partir dos registros lidos
+    for (const auto& game : games) {
+        insertion(game);
+    }
 }
 
 //Funções auxiliares para o switch case;
+
 void inserirSwitch(int id, std::string nome, std::string genre, std::string sinopse){
     Game newGame = {id, nome, genre, sinopse};
     insertion(newGame);
 }
-
 
 
 //Principal
@@ -345,6 +438,7 @@ int main() {
     std::cout<<"\n\t\t    O seu gerenciador de jogos\n";
     int choice, id;
     std::string nome, genre, sinopse;
+    std::string nomeUPD, generoUPD, sinopseUPD;
     do {
         std::cout << "\nMenu:\n";
         std::cout << "1. Inserir Jogo\n";
@@ -352,6 +446,7 @@ int main() {
         std::cout << "3. Buscar Jogo\n";
         std::cout << "4. Mostrar Todos os Jogos\n";
         std::cout << "5. Filtrar jogo por genero\n";
+        std::cout<<"6. Atualizar algum jogo pelo ID\n";
         std::cout << "0. Sair\n";
         std::cout << "Escolha uma opcao: ";
         std::cin >> choice;
@@ -388,6 +483,49 @@ int main() {
             case 5:
                 // Filtrar genero
                 break;
+            case 6:
+                int ch, chave;
+                std::cout << "Qual jogo deseja modificar? Insira a chave: ";
+                std::cin >> chave;
+                std::cout << "\nEscolha o que deseja modificar do jogo:\n";
+                std::cout << "1-Apenas o nome\n";
+                std::cout << "2-Apenas o gênero\n";
+                std::cout << "3-Apenas a sinopse\n";
+                std::cout << "4-Todos os dados\n";
+                std::cout << "Insira: ";
+                std::cin >> ch;
+
+                // Limpar o buffer de entrada
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+                if (ch == 1) {
+                    std::string nomeUPD;
+                    std::cout << "Digite o nome novo: ";
+                    std::getline(std::cin, nomeUPD);
+                    updateGame(root, chave, nomeUPD);
+                } else if (ch == 2) {
+                    std::string generoUPD;
+                    std::cout << "Digite o gênero novo: ";
+                    std::getline(std::cin, generoUPD);
+                    updateGame(root, chave, "", generoUPD);
+                } else if (ch == 3) {
+                    std::string sinopseUPD;
+                    std::cout << "Digite a sinopse nova: ";
+                    std::getline(std::cin, sinopseUPD);
+                    updateGame(root, chave, "", "", sinopseUPD);
+                } else if (ch == 4) {
+                    std::string nomeUPD, generoUPD, sinopseUPD;
+                    std::cout << "Digite o nome novo: ";
+                    std::getline(std::cin, nomeUPD);
+                    std::cout << "Digite o gênero novo: ";
+                    std::getline(std::cin, generoUPD);
+                    std::cout << "Digite a sinopse nova: ";
+                    std::getline(std::cin, sinopseUPD);
+                    updateGame(root, chave, nomeUPD, generoUPD, sinopseUPD);
+                } else {
+                    std::cout << "Opção inválida!\n";
+                }
+                break;
             case 0:
                 std::cout << "Saindo...\n";
                 break;
@@ -398,4 +536,3 @@ int main() {
 
     return 0;
 }
-
